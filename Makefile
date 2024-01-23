@@ -8,7 +8,7 @@ DCC = g++
 # Flags
 CFLAGS += -std=c89 -Wall -Wextra -pedantic -O2
 
-SRC = main.c
+SRC = src/temp_sensor.cc main.cc
 OBJ = $(SRC:.c=.o)
 
 # Modes

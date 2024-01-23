@@ -11,12 +11,6 @@
 #include <cstring>
 #include <sys/time.h>
 
-#include <fcntl.h>
-#include <errno.h>
-#include <termios.h>
-#include <unistd.h>
-#include <pthread.h>
-
 
 #include <GL/glx.h>
 #include <GL/glxext.h>
@@ -34,26 +28,13 @@
 #include "nuklear_xlib_gl2.h"
 #include <string>
 #include <iostream>
+#include "src/temp_sensor.hh"
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
 
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
-
-/* ===============================================================
- *
- *                          EXAMPLE
- *
- * ===============================================================*/
-/* This are some code examples to provide a small overview of what can be
- * done with this library. To try out an example uncomment the defines */
-/*#define INCLUDE_ALL */
-/*#define INCLUDE_STYLE */
-/*#define INCLUDE_CALCULATOR */
-/*#define INCLUDE_CANVAS */
-/*#define INCLUDE_OVERVIEW */
-/*#define INCLUDE_NODE_EDITOR */
 
 struct XWindow {
     Display *dpy;
@@ -66,7 +47,7 @@ struct XWindow {
     Atom wm_delete_window;
     int width, height;
 };
-static int cur_temp = 0;
+
 static int gl_err = nk_false;
 static int gl_error_handler(Display *dpy, XErrorEvent *ev)
 {NK_UNUSED(dpy); NK_UNUSED(ev); gl_err = nk_true; return 0;}
@@ -103,40 +84,6 @@ has_extension(const char *string, const char *ext)
     return nk_false;
 }
 
-void* comThread(void* thread_data){
-    int fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
-    if (fd == -1) {
-        std::cerr << "Error: Unable to open serial port" << std::endl;
-        pthread_exit(0);
-    }
-
-    termios options;
-    tcgetattr(fd, &options);
-    options.c_cflag = B9600 | CS8 | CLOCAL | CREAD;
-    options.c_iflag = IGNPAR;
-    options.c_oflag = 0;
-    options.c_lflag = 0;
-    tcflush(fd, TCIFLUSH);
-    tcsetattr(fd, TCSANOW, &options);
-
-    while (true) {
-        struct timeval tv;
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-        select(fd+1, NULL, NULL, NULL, &tv);
-
-        char buf[10];
-        int n = read(fd, buf, sizeof(buf));
-        if (n > 0) {
-            buf[n] = '\0';
-            cur_temp = atoi(buf);
-
-        }
-    }
-
-    close(fd);
-	pthread_exit(0);
-}
 
 
 
@@ -144,9 +91,7 @@ int main(void)
 {
 
     /* start comThread */
-    void* thread_data = NULL;
-    pthread_t thread;
-    pthread_create(&thread, NULL, comThread, thread_data);
+    temp_sensor::start();
 
     /* Platform */
     int running = 1;
@@ -268,18 +213,6 @@ int main(void)
     nk_x11_font_stash_begin(&atlas);
     nk_x11_font_stash_end();
 
-    #ifdef INCLUDE_STYLE
-    #ifdef STYLE_WHITE
-    set_style(ctx, THEME_WHITE);
-    #elif defined(STYLE_RED)
-    set_style(ctx, THEME_RED);
-    #elif defined(STYLE_BLUE)
-    set_style(ctx, THEME_BLUE);
-    #elif defined(STYLE_DARK)
-    set_style(ctx, THEME_DARK);
-    #endif
-    #endif
-
     bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
     while (running)
     {
@@ -304,8 +237,20 @@ int main(void)
             static int property = 20;
 
             nk_layout_row_dynamic(ctx, 20, 1);
-            std::string temp = std::to_string(cur_temp);
-            nk_label(ctx, temp.c_str(), NK_TEXT_LEFT);
+            nk_slider_int(ctx, 0, &temp_sensor::target_temp, 60, 1);
+
+            std::string temp = std::to_string(temp_sensor::get_temp());
+            char* str_cur_temp;
+            char* str_target_temp;
+
+            asprintf(&str_cur_temp, "Current temp: %d", temp_sensor::get_temp());
+            asprintf(&str_target_temp, "Target temp: %d", temp_sensor::target_temp);
+
+            nk_label(ctx, str_cur_temp, NK_TEXT_LEFT);
+            nk_label(ctx, str_target_temp, NK_TEXT_LEFT);
+
+            free(str_cur_temp);
+            free(str_target_temp);
             
         }
         nk_end(ctx);
@@ -314,11 +259,6 @@ int main(void)
         glViewport(0, 0, win.width, win.height);
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(bg.r, bg.g, bg.b, bg.a);
-        /* IMPORTANT: `nk_x11_render` modifies some global OpenGL state
-         * with blending, scissor, face culling, depth test and viewport and
-         * defaults everything back into a default state.
-         * Make sure to either a.) save and restore or b.) reset your own state after
-         * rendering the UI. */
         nk_x11_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
         glXSwapBuffers(win.dpy, win.win);
     }
