@@ -1,4 +1,4 @@
-/* nuklear - v1.32.0 - public domain */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -28,7 +28,8 @@
 #include "nuklear_xlib_gl2.h"
 #include <string>
 #include <iostream>
-#include "src/temp_sensor.hh"
+
+#include "src/gui.hh"
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
@@ -228,32 +229,7 @@ int main(void)
         nk_input_end(ctx);
 
         /* GUI */
-        if (nk_begin(ctx, "TempView", nk_rect(50, 50, 200, 200),
-            NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-            NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
-        {
-            enum {EASY, HARD};
-            static int op = EASY;
-            static int property = 20;
-
-            nk_layout_row_dynamic(ctx, 20, 1);
-            nk_slider_int(ctx, 0, &temp_sensor::target_temp, 60, 1);
-
-            std::string temp = std::to_string(temp_sensor::get_temp());
-            char* str_cur_temp;
-            char* str_target_temp;
-
-            asprintf(&str_cur_temp, "Current temp: %d", temp_sensor::get_temp());
-            asprintf(&str_target_temp, "Target temp: %d", temp_sensor::target_temp);
-
-            nk_label(ctx, str_cur_temp, NK_TEXT_LEFT);
-            nk_label(ctx, str_target_temp, NK_TEXT_LEFT);
-
-            free(str_cur_temp);
-            free(str_target_temp);
-            
-        }
-        nk_end(ctx);
+        draw_window(ctx);
 
         XGetWindowAttributes(win.dpy, win.win, &win.attr);
         glViewport(0, 0, win.width, win.height);

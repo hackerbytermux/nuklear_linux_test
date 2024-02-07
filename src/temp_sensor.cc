@@ -3,6 +3,7 @@
 
 namespace temp_sensor{
     int cur_temp = 25;
+    int target_temp = 25;
     void* temp_thread(void* thread_data){
         int fd = open("/dev/ttyS2", O_RDWR | O_NOCTTY | O_SYNC);
         printf("[TempSensor]: starting...\n");

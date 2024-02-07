@@ -8,7 +8,7 @@ DCC = g++
 # Flags
 CFLAGS += -std=c89 -Wall -Wextra -pedantic -O2
 
-SRC = src/temp_sensor.cc main.cc
+SRC = src/temp_sensor.cc src/gui.cc main.cc
 OBJ = $(SRC:.c=.o)
 
 # Modes
@@ -23,4 +23,5 @@ clang: $(BIN)
 $(BIN):
 	@mkdir -p bin
 	rm -f bin/$(BIN) $(OBJS)
-	$(CC) $(SRC) -o bin/$(BIN) -lX11 -lGL -lGLU 
+	$(CC) $(SRC) -o bin/$(BIN) -lX11 -lGL
+

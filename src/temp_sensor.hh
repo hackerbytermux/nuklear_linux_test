@@ -6,7 +6,8 @@
 #include <iostream>
 
 namespace temp_sensor{
-    static int target_temp = 30;
+    extern int cur_temp;
+    extern int target_temp;
     void* temp_thread(void* thread_data);
     void start();
     int get_temp();
