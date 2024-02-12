@@ -14,8 +14,8 @@ void draw_window(nk_context *ctx){
         }
         
         std::string cur_temp = std::to_string(temp_sensor::get_temp());
-        nk_label(ctx, ("Current temp: " + cur_temp).c_str(), NK_TEXT_LEFT);
         nk_label(ctx, ("Target temp: " + std::to_string(target_temp)).c_str(), NK_TEXT_LEFT);
+        nk_temp_view(ctx, target_temp, 0, 60);
 }
     nk_end(ctx);
 }
